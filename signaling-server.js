@@ -3,6 +3,9 @@
 /**************/
 var PORT = 8080;
 
+if (process.env.PORT){
+	PORT = process.env.PORT;
+}
 
 /*************/
 /*** SETUP ***/
@@ -17,6 +20,7 @@ var io  = require('socket.io').listen(server);
 
 server.listen(PORT, null, function() {
     console.log("Listening on port " + PORT);
+	console.log("Process.env.PORT = " + process.env.PORT);
 });
 //main.use(express.bodyParser());
 
