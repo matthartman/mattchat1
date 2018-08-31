@@ -2,9 +2,11 @@
 /*** CONFIG ***/
 /**************/
 var PORT = 8080;
+var HOST = "localhost";
 
 if (process.env.PORT){
 	PORT = process.env.PORT;
+	HOST = "0.0.0.0";
 }
 
 /*************/
@@ -18,7 +20,7 @@ var server = http.createServer(main)
 var io  = require('socket.io').listen(server);
 //io.set('log level', 2);
 
-server.listen(PORT, null, function() {
+server.listen(PORT, HOST, function() {
     console.log("Listening on port " + PORT);
 	console.log("Process.env.PORT = " + process.env.PORT);
 });
