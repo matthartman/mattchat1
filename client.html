@@ -44,6 +44,8 @@
             function init() {
                 console.log("Connecting to signaling server");
                 signaling_socket = io(SIGNALING_SERVER);
+                console.log('SIGNALING_SERVER', SIGNALING_SERVER);
+                console.log('signaling_socket', signaling_socket);
                 signaling_socket = io();
 
                 signaling_socket.on('connect', function() {
