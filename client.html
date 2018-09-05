@@ -20,7 +20,8 @@
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
         <script>
             /** CONFIG **/
-            var SIGNALING_SERVER = window.location.protocol + "://" + window.location.host;
+            var SIGNALING_SERVER = window.location.host; //window.location.protocol + "://" +
+            console.log('SIGNALING_SERVER', SIGNALING_SERVER);
             var USE_AUDIO = true;
             var USE_VIDEO = true;
             var DEFAULT_CHANNEL = 'mattchat-global';
@@ -43,6 +44,8 @@
             function init() {
                 console.log("Connecting to signaling server");
                 signaling_socket = io(SIGNALING_SERVER);
+                console.log('SIGNALING_SERVER', SIGNALING_SERVER);
+                console.log('signaling_socket', signaling_socket);
                 signaling_socket = io();
 
                 signaling_socket.on('connect', function() {
