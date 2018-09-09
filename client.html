@@ -91,7 +91,7 @@
                     }
                     var peer_connection = new RTCPeerConnection(
                         {"iceServers": ICE_SERVERS},
-                        {"optional": [{"DtlsSrtpKeyAgreement": true, "playsinline": true}]} /* this will no longer be needed by chrome
+                        {"optional": [{"DtlsSrtpKeyAgreement": true}]} /* this will no longer be needed by chrome
                                                                         * eventually (supposedly), but is necessary
                                                                         * for now to get firefox to talk to chrome */
                     );
@@ -268,9 +268,13 @@
 						local_media.attr("id", "mattsVideo");
                         local_media.attr("muted", true); /* always mute ourselves by default */
                         local_media.attr("controls", "");
+                        local_media.attr("playsinline", true);
+                        local_media.attr("controls", true);
                         $('body').append(local_media);
                         attachMediaStream(local_media[0], stream);
-				
+				        setTimeout(() => {
+                            local_media.attr("controls","");
+                        });
 
                         if (callback) callback();
                     },
