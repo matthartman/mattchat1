@@ -112,10 +112,10 @@
                         console.log("onAddStream", event);
                         var remote_media = USE_VIDEO ? $("<video>") : $("<audio>");
                         remote_media.attr("autoplay", "autoplay");
-                        remote_media.attr("id", "theirVideo");
+                        remote_media.attr("id", "friendVideo");
                         if (MUTE_AUDIO_BY_DEFAULT) {
                             remote_media.attr("muted", "true");
-							remote_media.attr("id", "friendVideo");
+							
                         }
                         remote_media.attr("controls", "");
                         peer_media_elements[peer_id] = remote_media;
@@ -265,12 +265,12 @@
                         local_media_stream = stream;
                         var local_media = USE_VIDEO ? $("<video>") : $("<audio>");
                         local_media.attr("autoplay", "autoplay");
-						local_media.attr("id", "myVideo");
+						local_media.attr("id", "mattsVideo");
                         local_media.attr("muted", "true"); /* always mute ourselves by default */
                         local_media.attr("controls", "");
                         $('body').append(local_media);
                         attachMediaStream(local_media[0], stream);
-						myVideo.muted=true;
+				
 
                         if (callback) callback();
                     },
