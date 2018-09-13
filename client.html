@@ -268,13 +268,11 @@
 						local_media.attr("id", "mattsVideo");
                         local_media.attr("muted", true); /* always mute ourselves by default */
                         local_media.attr("controls", "");
+
                         local_media.attr("playsinline", true);
-                        local_media.attr("controls", true);
+                        
                         $('body').append(local_media);
                         attachMediaStream(local_media[0], stream);
-				        setTimeout(() => {
-                            local_media.attr("controls","");
-                        });
 
                         if (callback) callback();
                     },
