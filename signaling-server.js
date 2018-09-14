@@ -22,7 +22,11 @@ var io  = require('socket.io').listen(server);
 
 server.listen(PORT, HOST, function() {
     console.log("Listening on port " + PORT);
-	console.log("Process.env.PORT = " + process.env.PORT);
+    if(typeof process.env.PORT !== "undefined") {
+        console.log("Process.env.PORT = " + process.env.PORT);
+    } else {
+        console.log("Note: PORT not defined in the environment");
+    }
 });
 //main.use(express.bodyParser());
 
