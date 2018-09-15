@@ -1,7 +1,11 @@
 <!doctype html>
 <html>
     <head>
-
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <!-- This adapter.js file de-prefixes the webkit* and moz* prefixed RTC
+             methods. When RTC becomes a more solid standard, this adapter should no
+             longer be necessary. -->
+        <!-- <script src="https://webrtc.googlecode.com/svn/trunk/samples/js/base/adapter.js"></script> -->
         <style>
             html, body {
                 background-color: #333;
@@ -13,41 +17,30 @@
             }
         </style>
 
-        <!-- This adapter.js file de-prefixes the webkit* and moz* prefixed RTC
-             methods. When RTC becomes a more solid standard, this adapter should no
-             longer be necessary. -->
-        <!-- <script src="https://webrtc.googlecode.com/svn/trunk/samples/js/base/adapter.js"></script> -->
-        <script src="//webrtc.github.io/adapter/adapter-latest.js"></script>
+        <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+        <script>
+            /** CONFIG **/
+            var SIGNALING_SERVER = window.location.host; //window.location.protocol + "://" + 
+            var USE_AUDIO = true;
+            var USE_VIDEO = true;
+            var DEFAULT_CHANNEL = 'mattchat-global';
+            var MUTE_AUDIO_BY_DEFAULT = true;
 
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-        <script src="//cdn.socket.io/socket.io-1.4.5.js"></script>
+            /** You should probably use a different stun server doing commercial stuff **/
+            /** Also see: https://gist.github.com/zziuni/3741933 **/
+            var ICE_SERVERS = [
+                {url:"stun:stun.l.google.com:19302"}
+            ];
+        </script>
+
 
         <script>
+            var signaling_socket = null;   /* our socket.io connection to our webserver */
+            var local_media_stream = null; /* our own microphone / webcam */
+            var peers = {};                /* keep track of our peer connections, indexed by peer_id (aka socket.io id) */
+            var peer_media_elements = {};  /* keep track of our <video>/<audio> tags, indexed by peer_id */
 
-            jQuery(function($) {
-
-                /** CONFIG **/
-                var SIGNALING_SERVER = window.location.host; //window.location.protocol + "://" +
-                var USE_AUDIO = true;
-                var USE_VIDEO = true;
-                var DEFAULT_CHANNEL = 'mattchat-global';
-                var MUTE_AUDIO_BY_DEFAULT = true;
-
-                /** You should probably use a different stun server doing commercial stuff **/
-                /** Also see: https://gist.github.com/zziuni/3741933 **/
-                var ICE_SERVERS = [
-                    {url:"stun:stun.l.google.com:19302"}
-                ];
-
-                var signaling_socket = null;   /* our socket.io connection to our webserver */
-                var local_media_stream = null; /* our own microphone / webcam */
-                var peers = {};                /* keep track of our peer connections, indexed by peer_id (aka socket.io id) */
-                var peer_media_elements = {};  /* keep track of our <video>/<audio> tags, indexed by peer_id */
-
-                //
-                // INIT
-                //
-
+            function init() {
                 console.log("Connecting to signaling server");
                 signaling_socket = io(SIGNALING_SERVER);
                 signaling_socket = io();
@@ -56,16 +49,14 @@
                     console.log("Connected to signaling server");
                     setup_local_media(function() {
                         /* once the user has given us access to their
-                        * microphone/camcorder, join the channel and start peering up */
+                         * microphone/camcorder, join the channel and start peering up */
                         join_chat_channel(DEFAULT_CHANNEL, {'whatever-you-want-here': 'stuff'});
                     });
-
                 });
-
                 signaling_socket.on('disconnect', function() {
                     console.log("Disconnected from signaling server");
                     /* Tear down all of our peer connections and remove all the
-                    * media divs when we disconnect */
+                     * media divs when we disconnect */
                     for (peer_id in peer_media_elements) {
                         peer_media_elements[peer_id].remove();
                     }
@@ -76,14 +67,13 @@
                     peers = {};
                     peer_media_elements = {};
                 });
-
                 function join_chat_channel(channel, userdata) {
                     signaling_socket.emit('join', {"channel": channel, "userdata": userdata});
                 }
-
                 function part_chat_channel(channel) {
                     signaling_socket.emit('part', channel);
                 }
+
 
                 /**
                 * When we join a group, our signaling server will send out 'addPeer' events to each pair
@@ -92,7 +82,6 @@
                 * connections in the network).
                 */
                 signaling_socket.on('addPeer', function(config) {
-
                     console.log('Signaling server said to add peer:', config);
                     var peer_id = config.peer_id;
                     if (peer_id in peers) {
@@ -119,7 +108,6 @@
                             });
                         }
                     }
-
                     peer_connection.onaddstream = function(event) {
                         console.log("onAddStream", event);
                         var remote_media = USE_VIDEO ? $("<video>") : $("<audio>");
@@ -127,7 +115,7 @@
                         remote_media.attr("id", "friendVideo");
                         if (MUTE_AUDIO_BY_DEFAULT) {
                             remote_media.attr("muted", "true");
-
+							
                         }
                         remote_media.attr("controls", "");
                         peer_media_elements[peer_id] = remote_media;
@@ -139,16 +127,13 @@
                     peer_connection.addStream(local_media_stream);
 
                     /* Only one side of the peer connection should create the
-                    * offer, the signaling server picks one to be the offerer.
-                    * The other user will get a 'sessionDescription' event and will
-                    * create an offer, then send back an answer 'sessionDescription' to us
-                    */
+                     * offer, the signaling server picks one to be the offerer.
+                     * The other user will get a 'sessionDescription' event and will
+                     * create an offer, then send back an answer 'sessionDescription' to us
+                     */
                     if (config.should_create_offer) {
-
                         console.log("Creating RTC offer to ", peer_id);
-
                         peer_connection.createOffer(
-
                             function (local_description) {
                                 console.log("Local offer description is: ", local_description);
                                 peer_connection.setLocalDescription(local_description,
@@ -160,22 +145,19 @@
                                     function() { Alert("Offer setLocalDescription failed!"); }
                                 );
                             },
-
                             function (error) {
                                 console.log("Error sending offer: ", error);
-                            }
-
-                        );
+                            });
                     }
                 });
 
 
                 /**
-                * Peers exchange session descriptions which contains information
-                * about their audio / video settings and that sort of stuff. First
-                * the 'offerer' sends a description to the 'answerer' (with type
-                * "offer"), then the answerer sends one back (with type "answer").
-                */
+                 * Peers exchange session descriptions which contains information
+                 * about their audio / video settings and that sort of stuff. First
+                 * the 'offerer' sends a description to the 'answerer' (with type
+                 * "offer"), then the answerer sends one back (with type "answer").
+                 */
                 signaling_socket.on('sessionDescription', function(config) {
                     console.log('Remote description received: ', config);
                     var peer_id = config.peer_id;
@@ -216,9 +198,9 @@
                 });
 
                 /**
-                * The offerer will send a number of ICE Candidate blobs to the answerer so they
-                * can begin trying to find the best path to one another on the net.
-                */
+                 * The offerer will send a number of ICE Candidate blobs to the answerer so they
+                 * can begin trying to find the best path to one another on the net.
+                 */
                 signaling_socket.on('iceCandidate', function(config) {
                     var peer = peers[config.peer_id];
                     var ice_candidate = config.ice_candidate;
@@ -227,19 +209,17 @@
 
 
                 /**
-                * When a user leaves a channel (or is disconnected from the
-                * signaling server) everyone will recieve a 'removePeer' message
-                * telling them to trash the media channels they have open for those
-                * that peer. If it was this client that left a channel, they'll also
-                * receive the removePeers. If this client was disconnected, they
-                * wont receive removePeers, but rather the
-                * signaling_socket.on('disconnect') code will kick in and tear down
-                * all the peer sessions.
-                */
+                 * When a user leaves a channel (or is disconnected from the
+                 * signaling server) everyone will recieve a 'removePeer' message
+                 * telling them to trash the media channels they have open for those
+                 * that peer. If it was this client that left a channel, they'll also
+                 * receive the removePeers. If this client was disconnected, they
+                 * wont receive removePeers, but rather the
+                 * signaling_socket.on('disconnect') code will kick in and tear down
+                 * all the peer sessions.
+                 */
                 signaling_socket.on('removePeer', function(config) {
-
                     console.log('Signaling server said to remove peer:', config);
-
                     var peer_id = config.peer_id;
                     if (peer_id in peer_media_elements) {
                         peer_media_elements[peer_id].remove();
@@ -251,66 +231,60 @@
                     delete peers[peer_id];
                     delete peer_media_elements[config.peer_id];
                 });
-
             }
+
+
 
 
             /***********************/
             /** Local media stuff **/
             /***********************/
             function setup_local_media(callback, errorback) {
-
                 if (local_media_stream != null) {  /* ie, if we've already been initialized */
                     if (callback) callback();
                     return;
                 }
-
                 /* Ask user for permission to use the computers microphone and/or camera,
-                * attach it to an <audio> or <video> tag if they give us access. */
+                 * attach it to an <audio> or <video> tag if they give us access. */
                 console.log("Requesting access to local audio / video inputs");
 
+
                 navigator.getUserMedia = ( navigator.getUserMedia ||
-                    navigator.webkitGetUserMedia ||
-                    navigator.mozGetUserMedia ||
-                    navigator.msGetUserMedia);
+                       navigator.webkitGetUserMedia ||
+                       navigator.mozGetUserMedia ||
+                       navigator.msGetUserMedia);
 
                 attachMediaStream = function(element, stream) {
                     console.log('DEPRECATED, attachMediaStream will soon be removed.');
                     element.srcObject = stream;
-                };
+                 };
 
-                navigator.getUserMedia({"audio": USE_AUDIO, "video": USE_VIDEO},
-
+                navigator.getUserMedia({"audio":USE_AUDIO, "video":USE_VIDEO},
                     function(stream) { /* user accepted access to a/v */
                         console.log("Access granted to audio/video");
                         local_media_stream = stream;
                         var local_media = USE_VIDEO ? $("<video>") : $("<audio>");
                         local_media.attr("autoplay", "autoplay");
-                        local_media.attr("id", "mattsVideo");
+						local_media.attr("id", "mattsVideo");
                         local_media.attr("muted", true); /* always mute ourselves by default */
                         local_media.attr("controls", "");
 
                         local_media.attr("playsinline", true);
-
+                        
                         $('body').append(local_media);
                         attachMediaStream(local_media[0], stream);
 
                         if (callback) callback();
                     },
-
                     function() { /* user denied access to a/v */
                         console.log("Access denied for audio/video");
                         alert("You chose not to provide access to the camera/microphone, demo will not work.");
                         if (errorback) errorback();
-                    }
-
-                );
-
-            });
-
+                    });
+            }
         </script>
     </head>
-    <body>
+    <body onload='init()'>
         <!--
         the <video> and <audio> tags are all added and removed dynamically
         in 'onAddStream', 'setup_local_media', and 'removePeer'/'disconnect'
